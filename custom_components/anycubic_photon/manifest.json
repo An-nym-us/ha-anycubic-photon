@@ -1,0 +1,12 @@
+{
+  "domain": "anycubic_photon",
+  "name": "Anycubic Photon (LAN)",
+  "codeowners": ["@An-nym-us"],
+  "config_flow": true,
+  "documentation": "https://github.com/An-nym-us/ha-anycubic-photon",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/An-nym-us/ha-anycubic-photon/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

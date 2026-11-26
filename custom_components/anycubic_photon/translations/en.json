@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Anycubic Photon printer",
+        "description": "Enter the printer's IP address. You can find it on the printer under Settings → Network.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the printer. Check that it is on, connected to Wi-Fi, and that the IP address is correct.",
+      "invalid_response": "The printer answered, but not with the expected LAN protocol."
+    },
+    "abort": {
+      "already_configured": "This printer is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "state": { "name": "Status" },
+      "progress": { "name": "Progress" },
+      "current_layer": { "name": "Current layer" },
+      "total_layers": { "name": "Total layers" },
+      "elapsed_time": { "name": "Elapsed time" },
+      "remaining_time": { "name": "Time remaining" },
+      "file_name": { "name": "File" },
+      "resin_volume": { "name": "Resin required" },
+      "layer_height": { "name": "Layer height" }
+    },
+    "binary_sensor": {
+      "printing": { "name": "Printing" }
+    },
+    "button": {
+      "pause": { "name": "Pause print" },
+      "resume": { "name": "Resume print" },
+      "stop": { "name": "Stop print" }
+    }
+  }
+}
