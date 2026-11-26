@@ -20,7 +20,7 @@ class PhotonEntity(CoordinatorEntity[PhotonCoordinator]):
             identifiers={(DOMAIN, info.serial)},
             manufacturer=MANUFACTURER,
             model=info.model,
-            name=info.model,
+            name=info.name or info.model,
             serial_number=info.serial,
             sw_version=info.firmware,
         )

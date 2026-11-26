@@ -3,19 +3,54 @@
     "step": {
       "user": {
         "title": "Anycubic Photon printer",
+        "description": "How should Home Assistant reach the printer?",
+        "menu_options": {
+          "local": "Local network (LAN) – fastest, no account needed",
+          "cloud": "Anycubic Cloud – works even when the printer's IP changes"
+        }
+      },
+      "local": {
+        "title": "Local network",
         "description": "Enter the printer's IP address. You can find it on the printer under Settings → Network.",
         "data": {
           "host": "Host",
           "port": "Port"
         }
+      },
+      "cloud": {
+        "title": "Anycubic Cloud",
+        "description": "Recommended: **Slicer Next token**. Sign in to Anycubic Slicer Next on Windows, close it, open `%AppData%\\AnycubicSlicerNext\\AnycubicSlicerNext.conf` in Notepad and copy the value of `access_token` (about 344 characters, without quotes).\n\nAlternative: **Web token**. Sign in at cloud-universe.anycubic.com, open the browser console (F12) and run `window.localStorage['XX-Token']`. Web tokens expire, and you'll be asked for a new one when that happens.",
+        "data": {
+          "auth_mode": "Token type",
+          "token": "Token"
+        }
+      },
+      "cloud_printer": {
+        "title": "Choose a printer",
+        "data": {
+          "printer_id": "Printer"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Anycubic Cloud sign-in expired",
+        "description": "Anycubic Cloud no longer accepts the saved token. Paste a new one (see the setup instructions for where to find it).",
+        "data": {
+          "auth_mode": "Token type",
+          "token": "Token"
+        }
       }
     },
     "error": {
       "cannot_connect": "Could not reach the printer. Check that it is on, connected to Wi-Fi, and that the IP address is correct.",
-      "invalid_response": "The printer answered, but not with the expected LAN protocol."
+      "invalid_response": "The printer answered, but not with the expected LAN protocol.",
+      "invalid_auth": "Anycubic Cloud rejected the token. Check that you copied all of it, without quotes.",
+      "cloud_unreachable": "Could not reach Anycubic Cloud. Try again in a moment.",
+      "no_printers": "No printers are linked to this Anycubic account. Add the printer in the Anycubic app first.",
+      "printer_missing": "That token belongs to an account without this printer."
     },
     "abort": {
-      "already_configured": "This printer is already configured."
+      "already_configured": "This printer is already configured.",
+      "reauth_successful": "Signed in again. The printer will reconnect."
     }
   },
   "options": {
@@ -24,6 +59,14 @@
         "data": {
           "scan_interval": "Update interval (seconds)"
         }
+      }
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "slicer": "Slicer Next token (recommended, long-lasting)",
+        "web": "Web token (expires)"
       }
     }
   },

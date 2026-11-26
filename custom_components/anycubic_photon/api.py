@@ -36,6 +36,20 @@ class PhotonResponseError(PhotonError):
     """The printer answered with something we could not understand."""
 
 
+class PhotonAuthError(PhotonError):
+    """Cloud credentials were rejected or have expired."""
+
+
+# The LAN protocol's state words, mapped to the names shared with cloud mode.
+_LAN_STATES = {
+    "print": "printing",
+    "pause": "paused",
+    "pausing": "paused",
+    "stop": "idle",
+    "finish": "finished",
+}
+
+
 @dataclass
 class PhotonSysInfo:
     """Answer to ``sysinfo``."""
@@ -44,6 +58,7 @@ class PhotonSysInfo:
     firmware: str
     serial: str
     wifi: str | None = None
+    name: str | None = None
 
 
 @dataclass
@@ -69,11 +84,11 @@ class PhotonStatus:
 
     @property
     def is_printing(self) -> bool:
-        return self.state == "print"
+        return self.state == "printing"
 
     @property
     def is_paused(self) -> bool:
-        return self.state.startswith("paus")
+        return self.state == "paused"
 
 
 def _to_int(value: str | None) -> int | None:
@@ -152,8 +167,9 @@ def parse_status(reply: str) -> PhotonStatus:
         file_name, _, internal = file_field.partition("/")
         internal = internal or None
 
+    state = fields[0].lower()
     return PhotonStatus(
-        state=fields[0].lower(),
+        state=_LAN_STATES.get(state, state),
         file_name=file_name,
         internal_file=internal,
         total_layers=_to_int(_field(fields, 2)),

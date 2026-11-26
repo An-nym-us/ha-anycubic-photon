@@ -1,71 +1,100 @@
-# Anycubic Photon (LAN) for Home Assistant
+# Anycubic Photon for Home Assistant
 
 A custom Home Assistant integration for the **Anycubic Photon Mono M3 Premium**
-(and other Photon printers that use Anycubic's local LAN protocol on TCP port
-6000, such as the Mono X, Mono X 6K and Mono SE). It talks to the printer
-directly on your network. No Anycubic cloud account is needed.
+and other Anycubic Photon resin printers. It connects one of two ways:
+
+- **Local network (LAN)**: talks to the printer directly on TCP port 6000.
+  Fast (15 s updates), no account needed, but it needs the printer's IP.
+- **Anycubic Cloud**: goes through your Anycubic account, the same service
+  the Anycubic app uses. It keeps working when the printer's IP changes.
+  Updates every 60 s and needs internet.
 
 ## Entities
 
 | Entity | Type | Notes |
 |---|---|---|
-| Status | sensor | Raw printer state (`print`, `pause`, `stop`, …). The full reply is in the `raw_status` attribute |
+| Status | sensor | `printing`, `paused`, `idle`, `finished`, … (cloud also: `offline`, `cancelled`, `downloading`, `preheating`). The `raw_status` attribute has the printer's own reply |
 | Progress | sensor | % |
 | Current layer / Total layers | sensor | |
 | Elapsed time / Time remaining | sensor | duration |
 | File | sensor | Name of the file being printed |
-| Resin required | sensor | mL, as reported by the slicer |
-| Layer height | sensor (diagnostic) | mm |
+| Resin required | sensor | mL, LAN only |
+| Layer height | sensor (diagnostic) | mm, LAN only |
 | Printing | binary sensor | On while a print is running |
 | Pause / Resume / Stop print | button | |
 
 Job sensors show *unknown* when nothing is printing.
 
-## 1. Check that your printer speaks the LAN protocol
-
-Before installing, run the built-in probe from any computer on the same
-network (needs Python 3.10+, no extra packages):
-
-```
-python custom_components/anycubic_photon/api.py 192.168.1.50
-```
-
-Replace the IP with your printer's (shown on the printer under network
-settings). If you see a `sysinfo:` line with your model and serial number,
-the integration will work. If it fails with "Cannot connect", your
-firmware doesn't expose port 6000; see **If the probe fails** below.
-
-## 2. Install
+## Install
 
 **HACS (custom repository):** in HACS go to ⋮ → *Custom repositories*, add
 `https://github.com/An-nym-us/ha-anycubic-photon` as type *Integration*, and
-install *Anycubic Photon (LAN)*.
+install *Anycubic Photon*.
 
 **Manual:** copy `custom_components/anycubic_photon` into your Home Assistant
 `config/custom_components/` folder.
 
 Restart Home Assistant, then go to **Settings → Devices & services → Add
-integration → Anycubic Photon (LAN)** and enter the printer's IP address.
+integration → Anycubic Photon** and choose LAN or Anycubic Cloud.
 
-Give the printer a fixed IP (a DHCP reservation in your router) so it
+## Setting up Anycubic Cloud
+
+Anycubic has no official sign-in for third-party apps, so you paste a token
+instead of a password. Two kinds work:
+
+**Slicer Next token (recommended, long-lasting)**
+
+1. Install Anycubic Slicer Next (free, from Anycubic's website) on Windows
+   and sign in with the account your printer is linked to.
+2. Close Slicer Next.
+3. Press Win+R, paste `%AppData%\AnycubicSlicerNext\AnycubicSlicerNext.conf`
+   and open it with Notepad.
+4. Find `"access_token"` and copy its value, about 344 characters, without
+   the quotes.
+5. Paste it into the integration and pick **Slicer Next token**.
+
+If you use Slicer Next to send prints while Home Assistant is connected, the
+two can occasionally log each other out. If that happens, Home Assistant
+asks you for a fresh token.
+
+**Web token (quicker, but expires)**
+
+1. Sign in at <https://cloud-universe.anycubic.com/file>.
+2. Press F12, open the **Console** tab and run
+   `window.localStorage["XX-Token"]`.
+3. Copy the value, without quotes, and pick **Web token**.
+
+When a token stops working, Home Assistant shows a **Re-authenticate**
+notice. Paste a new token there; nothing else needs setting up again.
+
+Treat either token like a password: anyone who has it can control your
+printers.
+
+## Setting up LAN
+
+Check that your printer speaks the LAN protocol by running the built-in probe
+from any computer on the same network (Python 3.10+, no extra packages):
+
+```
+python custom_components/anycubic_photon/api.py 192.168.1.50
+```
+
+If you see a `sysinfo:` line with your model and serial number, LAN mode
+works. Give the printer a fixed IP (a DHCP reservation in your router) so it
 doesn't move.
 
 ## Options
 
-The update interval defaults to 15 seconds. Change it under the
-integration's **Configure** button.
-
-## If the probe fails
-
-Some newer Anycubic firmware only talks to Anycubic Cloud and doesn't open
-port 6000. In that case, try updating the printer firmware, or use the
-cloud-based [hass-anycubic_cloud](https://github.com/WaresWichall/hass-anycubic_cloud)
-integration instead.
+The update interval (default 15 s for LAN, 60 s for cloud) can be changed
+under the integration's **Configure** button. Cloud mode won't go below
+30 s, to avoid hammering Anycubic's servers.
 
 ## Known limitations
 
-- The protocol is undocumented. Field meanings come from community reverse
-  engineering of the Mono X. If a sensor shows a wrong value on your M3
-  Premium, check the `raw_status` attribute on the Status sensor and adjust
-  `parse_status()` in `api.py`.
-- Starting a print and listing files on the printer aren't exposed yet.
+- Neither the LAN protocol nor the cloud API is documented by Anycubic. Both
+  come from community reverse engineering, and Anycubic can change the cloud
+  API at any time. The cloud mode is based on the endpoints used by
+  [hass-anycubic_cloud](https://github.com/WaresWichall/hass-anycubic_cloud).
+- If a sensor shows a wrong value, check the `raw_status` attribute on the
+  Status sensor and open an issue.
+- Starting a print and listing files on the printer aren't supported yet.

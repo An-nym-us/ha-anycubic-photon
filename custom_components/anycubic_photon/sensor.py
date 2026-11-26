@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import PhotonStatus
+from .const import CONNECTION_LOCAL, connection_type
 from .coordinator import PhotonConfigEntry
 from .entity import PhotonEntity
 
@@ -24,6 +25,7 @@ from .entity import PhotonEntity
 class PhotonSensorDescription(SensorEntityDescription):
     value_fn: Callable[[PhotonStatus], str | int | float | None]
     printing_only: bool = True
+    lan_only: bool = False
 
 
 SENSORS: tuple[PhotonSensorDescription, ...] = (
@@ -78,6 +80,7 @@ SENSORS: tuple[PhotonSensorDescription, ...] = (
         device_class=SensorDeviceClass.VOLUME,
         native_unit_of_measurement=UnitOfVolume.MILLILITERS,
         value_fn=lambda s: s.resin_ml,
+        lan_only=True,
     ),
     PhotonSensorDescription(
         key="layer_height",
@@ -85,6 +88,7 @@ SENSORS: tuple[PhotonSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfLength.MILLIMETERS,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.layer_height_mm,
+        lan_only=True,
     ),
 )
 
@@ -95,7 +99,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(PhotonSensor(coordinator, desc) for desc in SENSORS)
+    is_lan = connection_type(entry.data) == CONNECTION_LOCAL
+    async_add_entities(
+        PhotonSensor(coordinator, desc)
+        for desc in SENSORS
+        if is_lan or not desc.lan_only
+    )
 
 
 class PhotonSensor(PhotonEntity, SensorEntity):

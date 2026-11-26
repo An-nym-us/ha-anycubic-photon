@@ -16,13 +16,13 @@ from .entity import PhotonEntity
 
 @dataclass(frozen=True, kw_only=True)
 class PhotonButtonDescription(ButtonEntityDescription):
-    command: str
+    action: str
 
 
 BUTTONS: tuple[PhotonButtonDescription, ...] = (
-    PhotonButtonDescription(key="pause", translation_key="pause", command="gopause"),
-    PhotonButtonDescription(key="resume", translation_key="resume", command="goresume"),
-    PhotonButtonDescription(key="stop", translation_key="stop", command="gostop"),
+    PhotonButtonDescription(key="pause", translation_key="pause", action="pause"),
+    PhotonButtonDescription(key="resume", translation_key="resume", action="resume"),
+    PhotonButtonDescription(key="stop", translation_key="stop", action="stop"),
 )
 
 
@@ -44,8 +44,8 @@ class PhotonButton(PhotonEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         try:
-            await self.coordinator.async_send(self.entity_description.command)
+            await self.coordinator.async_command(self.entity_description.action)
         except PhotonError as err:
             raise HomeAssistantError(
-                f"Printer did not accept {self.entity_description.command}: {err}"
+                f"Printer did not accept {self.entity_description.action}: {err}"
             ) from err
