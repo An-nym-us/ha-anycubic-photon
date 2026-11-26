@@ -42,20 +42,28 @@ integration → Anycubic Photon** and choose LAN or Anycubic Cloud.
 Anycubic has no official sign-in for third-party apps, so you paste a token
 instead of a password. Two kinds work:
 
-**Slicer Next token (recommended, long-lasting)**
+**Slicer Next token (recommended, lasts about 90 days)**
 
 1. Install Anycubic Slicer Next (free, from Anycubic's website) on Windows
-   and sign in with the account your printer is linked to.
+   and sign in with the account your printer is linked to. You don't need
+   an FDM printer; it's only used to sign in.
 2. Close Slicer Next.
-3. Press Win+R, paste `%AppData%\AnycubicSlicerNext\AnycubicSlicerNext.conf`
-   and open it with Notepad.
-4. Find `"access_token"` and copy its value, about 344 characters, without
-   the quotes.
-5. Paste it into the integration and pick **Slicer Next token**.
+3. Open PowerShell and run this. It copies the token to your clipboard
+   without showing it:
 
-If you use Slicer Next to send prints while Home Assistant is connected, the
-two can occasionally log each other out. If that happens, Home Assistant
-asks you for a fresh token.
+   ```powershell
+   $m = Get-ChildItem "$env:APPDATA\AnycubicSlicerNext\log\debug_*.log" | Sort-Object LastWriteTime -Descending | Select-String -Pattern 'id_token=(eyJ[\w-]+\.[\w-]+\.[\w-]+)' | Select-Object -First 1; if ($m) { Set-Clipboard $m.Matches[0].Groups[1].Value; "Token copied to clipboard" } else { "No token found. Sign in to Slicer Next, close it, and try again." }
+   ```
+
+4. Paste it into the integration and pick **Slicer Next token**.
+
+This is for Slicer Next 2.x, which writes the login token to its debug log.
+Older versions stored it instead as `access_token` in
+`%AppData%\AnycubicSlicerNext\AnycubicSlicerNext.conf`; that value works
+too.
+
+The token is valid for about 90 days. Home Assistant asks for a new one
+when it expires: sign in to Slicer Next again and repeat step 3.
 
 **Web token (quicker, but expires)**
 
@@ -95,6 +103,11 @@ under the integration's **Configure** button. Cloud mode won't go below
   come from community reverse engineering, and Anycubic can change the cloud
   API at any time. The cloud mode is based on the endpoints used by
   [hass-anycubic_cloud](https://github.com/WaresWichall/hass-anycubic_cloud).
+- Cloud mode has been checked against a real Photon M3 Premium for sign-in
+  and printer status. Progress, layers and times come from Anycubic's
+  record of the print job. Prints started at the printer (for example from
+  USB) may have no such record; the printer then shows as `printing`
+  without details.
 - If a sensor shows a wrong value, check the `raw_status` attribute on the
   Status sensor and open an issue.
 - Starting a print and listing files on the printer aren't supported yet.

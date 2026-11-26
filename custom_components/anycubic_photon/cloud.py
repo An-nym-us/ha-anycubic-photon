@@ -6,9 +6,11 @@ change them without notice.
 
 Two ways to authenticate are supported:
 
-* ``slicer``: the ``access_token`` from Anycubic Slicer Next's config file
-  (``%AppData%\\AnycubicSlicerNext\\AnycubicSlicerNext.conf``). It is
-  exchanged for a session token on every start-up, so it lasts a long time.
+* ``slicer``: the login token Anycubic Slicer Next gets when you sign in.
+  Slicer Next 2.x writes it to its debug log as ``id_token=...`` (valid for
+  about 90 days); older versions stored it as ``access_token`` in
+  ``%AppData%\\AnycubicSlicerNext\\AnycubicSlicerNext.conf``. It is exchanged
+  for a session token on every start-up.
 * ``web``: the ``XX-Token`` value from cloud-universe.anycubic.com's local
   storage. Simpler to get, but it expires and then needs re-entering.
 """
@@ -36,13 +38,12 @@ _MODE_HEADERS = {
     AUTH_SLICER: {"device_type": "pcf", "version": "V3.0.0", "is_cn": "1"},
     AUTH_WEB: {"device_type": "web", "version": "1.0.0", "is_cn": "1"},
 }
-_WEB_EXTRA_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-    ),
-    "Origin": "https://uc.makeronline.com",
-}
+# Anycubic answers HTTP 403 to requests without a browser-like User-Agent.
+_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+)
+_WEB_EXTRA_HEADERS = {"Origin": "https://uc.makeronline.com"}
 
 # Values of a project's ``print_status``.
 _PRINT_STATUS = {
@@ -100,8 +101,12 @@ def parse_cloud_status(printer: dict, project: dict | None) -> PhotonStatus:
     if _to_int(printer.get("device_status")) not in (None, 1):
         return PhotonStatus(state="offline", raw=raw)
 
+    # The printer's own busy flag (2 = busy). Prints started at the printer,
+    # for example from USB, may have no cloud project to read details from.
+    busy = _to_int(printer.get("is_printing")) == 2
+
     if not project:
-        return PhotonStatus(state="idle", raw=raw)
+        return PhotonStatus(state="printing" if busy else "idle", raw=raw)
 
     print_status = _to_int(project.get("print_status"))
     state = _PRINT_STATUS.get(print_status, "unknown")
@@ -110,6 +115,10 @@ def parse_cloud_status(printer: dict, project: dict | None) -> PhotonStatus:
     raw.append(f"print_status={print_status}")
 
     if state not in _ACTIVE_STATES:
+        if busy:
+            # The latest cloud job is over, but the printer is working on
+            # something the cloud has no details for.
+            return PhotonStatus(state="printing", raw=raw)
         # The job is over; report the outcome without stale job numbers.
         return PhotonStatus(state=state, file_name=_file_name(project), raw=raw)
 
@@ -143,7 +152,7 @@ class AnycubicCloudClient:
             raise ValueError(f"Unknown auth mode {auth_mode!r}")
         self._session = session
         self._mode = auth_mode
-        self._token = token.strip().strip('"')
+        self._token = token.strip().strip('"').removeprefix("id_token=")
         self._session_token: str | None = self._token if auth_mode == AUTH_WEB else None
 
     def _headers(self, with_token: bool) -> dict[str, str]:
@@ -162,6 +171,7 @@ class AnycubicCloudClient:
             "XX-Version": mode["version"],
             "XX-LANGUAGE": "US",
             "Content-Type": "application/json",
+            "User-Agent": _USER_AGENT,
         }
         if self._mode == AUTH_WEB:
             headers.update(_WEB_EXTRA_HEADERS)

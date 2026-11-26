@@ -19,7 +19,7 @@
       },
       "cloud": {
         "title": "Anycubic Cloud",
-        "description": "Recommended: **Slicer Next token**. Sign in to Anycubic Slicer Next on Windows, close it, open `%AppData%\\AnycubicSlicerNext\\AnycubicSlicerNext.conf` in Notepad and copy the value of `access_token` (about 344 characters, without quotes).\n\nAlternative: **Web token**. Sign in at cloud-universe.anycubic.com, open the browser console (F12) and run `window.localStorage['XX-Token']`. Web tokens expire, and you'll be asked for a new one when that happens.",
+        "description": "Recommended: **Slicer Next token**. Sign in to Anycubic Slicer Next on Windows, close it, then copy the token with the PowerShell command in this integration's README. It lasts about 90 days.\n\nAlternative: **Web token**. Sign in at cloud-universe.anycubic.com, open the browser console (F12) and run `window.localStorage['XX-Token']`.\n\nYou'll be asked for a new token when the old one expires.",
         "data": {
           "auth_mode": "Token type",
           "token": "Token"
